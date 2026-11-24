@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {catchupBuckets,catchupPlan,DAY} from '../public/learning-core.js';
+const now=Date.parse('2026-11-22T12:00:00Z');
+const state={items:[{id:'a',title:'Old',status:'Memorized',due:now-5*DAY},{id:'b',title:'Unknown date',status:'Practiced'},{id:'c',title:'Retest',status:'Mastered'}],paragraphs:[{id:'p',status:'Unverified / Pending',target:'Test paragraph'},{id:'q',status:'Memorized'}]};
+test('separates real overdue from unknown-date historical backlog',()=>{const b=catchupBuckets(state,now);assert.equal(b.counts.overdue,1);assert.equal(b.counts.baseline,2);assert.equal(b.overdue[0].overdueDays,5);assert.equal(b.baseline.find(x=>x.id==='b').overdueDays,null)});
+test('only unmemorized paragraphs enter paragraph catch-up',()=>{assert.deepEqual(catchupBuckets(state,now).paragraphs.map(x=>x.id),['p'])});
+test('mastered expressions are queued for retest',()=>{assert.deepEqual(catchupBuckets(state,now).mastered.map(x=>x.id),['c'])});
+test('recent successful retest temporarily removes mastered item from queue',()=>{const s={...state,retestHistory:[{id:'c',passed:true,at:new Date(now-DAY).toISOString()}]};assert.equal(catchupBuckets(s,now).counts.mastered,0)});
+test('rotating catch-up plan covers different categories',()=>{const p=catchupPlan(state,now,4);assert.deepEqual(p.map(x=>x.kind),['overdue','paragraph','baseline','mastered'])});
+test('catch-up planning does not mutate local state',()=>{const original=JSON.stringify(state);catchupPlan(state,now);assert.equal(JSON.stringify(state),original)});
