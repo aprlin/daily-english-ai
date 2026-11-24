@@ -1,0 +1,16 @@
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local dependencies and generated files
+node_modules/
+.DS_Store
+*.log
+coverage/
+
+# Local runtime data and personal backup exports
+data/*
+daily-english-backup-*.json
